@@ -1,13 +1,11 @@
 # flake8: noqa
-from langchain_qdrant import QdrantVectorStore
 from langchain_openai import OpenAIEmbeddings
 from openai import OpenAI
 import os
+from langchain_qdrant import QdrantVectorStore
 
-client = OpenAI(
-    api_key = os.getenv("GEMINI_API_KEY"),
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
-)
+
+client = OpenAI()
 
 # Vector embeddings
 embedding_model = OpenAIEmbeddings(
@@ -16,21 +14,18 @@ embedding_model = OpenAIEmbeddings(
 
 # Vector DB connection
 vector_db = QdrantVectorStore.from_existing_collection(
-    url = "http://vector-db:6333",
+    url="http://vector-db:6333",
     collection_name="learning_vectors",
     embedding=embedding_model
 )
 
-messages = []
-
-while True:
-    query = input("> ")
-
-    #Vector similarity search in DB
-    search_results = vector_db.similarity_search(
+async def process_query(query: str):
+    print("Processing query: ", query)
+    
+    search_results=vector_db.similarity_search(
     query=query
     )
-
+    
     context = "\n\n\n".join([f"Page Content: {result.page_content}\nPage Number: {result.metadata['page_label']}\nFile Location: {result.metadata['source']}" for result in search_results])
 
     SYSTEM_PROMPT = f"""
@@ -43,16 +38,15 @@ while True:
         Context: 
         {context}
     """
-
+    
     messages = [
         { "role": "system", "content": SYSTEM_PROMPT },
         { "role": "user", "content": query }
     ]
 
     response = client.chat.completions.create(
-    model="gemini-2.0-flash",
+    model="gpt-4.1",
     messages=messages
     )
-
-    reply = response.choices[0].message.content
-    print("\nAssistant:", reply)
+    
+    print(f"🤖: {query}", response.choices[0].message.content, "\n\n\n")
