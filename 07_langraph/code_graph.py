@@ -165,7 +165,10 @@ def main():
         "is_coding_question": False
     }
 
-    response = graph.invoke(_state)
-    print("Graph result: ", response)
+    for event in graph.stream(_state):
+        print("Event: ", event)
+
+    # response = graph.invoke(_state)
+    # print("Graph result: ", response)
 
 main()
